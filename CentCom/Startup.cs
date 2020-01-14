@@ -1,6 +1,8 @@
-﻿using System.Text;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
-using AutoMapper;
 using CentCom.Helpers;
 using CentCom.Interfaces;
 using CentCom.Models;
@@ -13,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Pomelo.EntityFrameworkCore.MySql;
 
 namespace CentCom
 {
@@ -29,10 +32,10 @@ namespace CentCom
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
-            services.AddDbContext<DataContext>(options => options.UseInMemoryDatabase("CentCom"));
+            services.AddDbContext<DataContext>(options =>
+                options.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
-            services.AddAutoMapper();
-            
+
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -51,15 +54,19 @@ namespace CentCom
                     {
                         OnTokenValidated = context =>
                         {
-                            var authService = context.HttpContext.RequestServices.GetRequiredService<IAuthService>();
-                            var userId = int.Parse(context.Principal.Identity.Name);
+                            var authService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                            Claim idClaim = context.Principal.Claims.FirstOrDefault(claim =>
+                                claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name");
+                            var userId = Int64.Parse(idClaim.Value);
                             var user = authService.GetById(userId);
                             if (user == null)
                             {
                                 // return unauthorized if user no longer exists
                                 context.Fail("Unauthorized");
                             }
-                            return Task.CompletedTask;;
+
+                            return Task.CompletedTask;
+                            ;
                         }
                     };
                     x.RequireHttpsMetadata = false;
@@ -74,7 +81,7 @@ namespace CentCom
                 });
 
             // configure DI for application services
-            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<ICredentialValidationService, CredentialValidationService>();
         }

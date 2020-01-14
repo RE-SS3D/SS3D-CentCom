@@ -1,0 +1,138 @@
+swagger: "2.0"
+info:
+  version: ""
+  title: ""
+basePath: "/{your_host_address}/api"
+tags:
+- name: "heartbeat"
+  description: "Health check related functions"
+- name: "user"
+  description: "User related operations"
+- name: "character"
+  description: "Character related operations"
+paths:
+  /heartbeat:
+    get:
+      tags:
+      - "heartbeat"
+      summary: "Check if login server is responding"
+      parameters: []
+      responses:
+        200:
+          description: "Honk!"
+          schema:
+            type: "string"
+  /user/register:
+    post:
+      tags:
+      - "user"
+      summary: "Register a new user"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "user credentials"
+        required: true
+        schema:
+          $ref: "#/definitions/AuthenticationRequest"
+      responses:
+        200:
+          description: "Success"
+        400:
+          description: "The email {user.Email} is already taken."
+  /user/authenticate:
+    post:
+      tags:
+      - "user"
+      summary: "Authenticate a user and receive a token"
+      description: ""
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "user credentials"
+        required: true
+        schema:
+          $ref: "#/definitions/AuthenticationRequest"
+      responses:
+        200:
+          description: "Success"
+        400:
+          description: "One of the many possible validation errors"
+  /character/all:
+    get:
+      tags:
+      - "character"
+      summary: "Get all characters belonging to the current user"
+      description: ""
+      parameters:
+      - in: "header"
+        name: "Authorization"
+        type: string
+        description: "Authorization header"
+        required: true
+      responses:
+        200:
+          description: "Success"
+          type: "array"
+          schema:
+            $ref: "#/definitions/Character"
+  /character/create:
+    post:
+      tags:
+      - "character"
+      summary: "Create a new character for the current user"
+      description: ""
+      parameters:
+      - in: "header"
+        name: "Authorization"
+        type: string
+        description: "Authorization header"
+        required: true
+      responses:
+        200:
+          description: "Success"
+          type: "array"
+          schema:
+            $ref: "#/definitions/Character"
+  /character/{id}:
+    delete:
+      tags:
+      - "character"
+      summary: "Delete a specific character"
+      description: ""
+      parameters:
+      - in: "header"
+        name: "Authorization"
+        type: string
+        description: "Authorization header"
+        required: true
+      responses:
+        200:
+          description: "Success"
+        400:
+          description: "Deleting other people's characters is forbidden."
+definitions:
+  AuthenticationRequest:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+      password:
+        type: "string"
+  AuthenticationResponse:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      email:
+        type: "string"
+      token:
+        type: "string"
+  Character:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      userId:
+        type: "string"
+      name:
+        type: "string"

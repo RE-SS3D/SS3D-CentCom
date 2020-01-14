@@ -3,16 +3,15 @@ using System.Linq;
 using CentCom.Helpers;
 using CentCom.Interfaces;
 using CentCom.Models;
-using CentCom.Tupples;
 
 namespace CentCom.Services
 {
-    public class AuthService : IAuthService
+    public class UserService : IUserService
     {
         private DataContext _context;
         private CredentialValidationService _credentialValidationService;
 
-        public AuthService(DataContext context)
+        public UserService(DataContext context)
         {
             _context = context;
             _credentialValidationService = new CredentialValidationService();
@@ -31,7 +30,7 @@ namespace CentCom.Services
             }
 
             //Incorrect password
-            if (!HashHelper.VerifyPasswordHash(password, user.Password))
+            if (!HashHelper.VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
             {
                 throw new AppException("Incorrect Email of Password.");
             }
@@ -48,16 +47,21 @@ namespace CentCom.Services
                 throw new AppException($"The email {user.Email} is already taken.");
             }
 
-            PasswordHashWithSalt passwordHashWithSalt = HashHelper.CreatePasswordHash(password);
-            user.Password = passwordHashWithSalt;
+            byte[] passwordHash;
+            byte[] passwordSalt;
+            HashHelper.CreatePasswordHash(password, out passwordHash, out passwordSalt);
+            User newUser = new User();
+            newUser.Email = user.Email;
+            newUser.PasswordHash = passwordHash;
+            newUser.PasswordSalt = passwordSalt;
 
-            _context.Users.Add(user);
+            _context.Users.Add(newUser);
             _context.SaveChanges();
 
             return user;
         }
         
-        public User GetById(int id)
+        public User GetById(long id)
         {
             return _context.Users.Find(id);
         }

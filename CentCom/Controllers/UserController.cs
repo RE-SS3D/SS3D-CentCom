@@ -2,7 +2,6 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AutoMapper;
 using CentCom.Dtos;
 using CentCom.Helpers;
 using CentCom.Interfaces;
@@ -19,17 +18,14 @@ namespace CentCom.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private IAuthService _authService;
-        private IMapper _mapper;
+        private IUserService _userService;
         private readonly AppSettings _appSettings;
 
         public UserController(
-            IAuthService authService,
-            IMapper mapper,
+            IUserService userService,
             IOptions<AppSettings> appSettings)
         {
-            _authService = authService;
-            _mapper = mapper;
+            _userService = userService;
             _appSettings = appSettings.Value;
         }
         
@@ -40,7 +36,7 @@ namespace CentCom.Controllers
             User user;
             try 
             {
-                user = _authService.Authenticate(request.Email, request.Password);
+                user = _userService.Authenticate(request.Email, request.Password);
             } 
             catch(AppException ex)
             {
@@ -53,7 +49,8 @@ namespace CentCom.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[] 
                 {
-                    new Claim(ClaimTypes.Email, user.Id.ToString())
+                    new Claim(ClaimTypes.Name, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email)
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -72,11 +69,11 @@ namespace CentCom.Controllers
         [HttpPost("register")]
         public IActionResult Register([FromBody]AuthenticateRequest request)
         {
-            var user = _mapper.Map<User>(request);
+            var user = Models.User.From(request);
             
             try 
             {
-                _authService.Create(user, request.Password);
+                _userService.Create(user, request.Password);
                 return Ok();
             } 
             catch(AppException ex)

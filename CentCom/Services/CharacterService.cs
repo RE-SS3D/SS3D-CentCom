@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CentCom.Helpers;
 using CentCom.Interfaces;
 using CentCom.Models;
 
@@ -21,22 +22,31 @@ namespace CentCom.Services
 
         public Character Create(Character character, long userId)
         {
-            character.UserId = userId;
+            Character newCharacter = new Character();
+            newCharacter.Id = character.Id;
+            newCharacter.UserId = userId;
+            newCharacter.Name = character.Name;
             
-            _context.Characters.Add(character);
+            _context.Characters.Add(newCharacter);
             _context.SaveChanges();
 
-            return character;
+            return newCharacter;
         }
 
         public void Delete(long userId, long id)
         {
             var character = _context.Characters.Find(id);
-            if (character != null && userId == character.UserId)
+            if (character == null)
             {
-                _context.Characters.Remove(character);
-                _context.SaveChanges();
+                throw new AppException($"Could not find character with ID {id}");
             }
+
+            if (userId != character.UserId)
+            {
+                throw new AppException("Deleting other people's characters is forbidden.");
+            }
+            _context.Characters.Remove(character);
+            _context.SaveChanges();
         }
     }
 }

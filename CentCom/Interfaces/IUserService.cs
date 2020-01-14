@@ -2,10 +2,10 @@ using CentCom.Models;
 
 namespace CentCom.Interfaces
 {
-    public interface IAuthService
+    public interface IUserService
     {
         User Authenticate(string username, string password);
         User Create(User user, string password);
-        User GetById(int id);
+        User GetById(long id);
     }
 }
