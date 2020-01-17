@@ -9,7 +9,7 @@ namespace CentCom.Controllers
         [HttpGet]
         public ActionResult<string> Get()
         {
-            return "Honk!";
+            return "{\"message\":\"Honk!\"}";
         }
     }
 }

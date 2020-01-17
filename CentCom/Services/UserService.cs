@@ -26,13 +26,13 @@ namespace CentCom.Services
             //User does not exist
             if (user == null)
             {
-                throw new AppException("Incorrect Email of Password.");
+                throw new AppException("Incorrect Email or Password.");
             }
 
             //Incorrect password
             if (!HashHelper.VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
             {
-                throw new AppException("Incorrect Email of Password.");
+                throw new AppException("Incorrect Email or Password.");
             }
                 
             return user;
