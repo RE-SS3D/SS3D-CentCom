@@ -1,4 +1,4 @@
-create table users
+create table Users
 (
   Id           int auto_increment,
   Email        varchar(128) not null,
@@ -11,7 +11,7 @@ create table users
     unique (Id)
 );
 
-create table characters
+create table Characters
 (
   Id     int auto_increment,
   UserId int          not null,

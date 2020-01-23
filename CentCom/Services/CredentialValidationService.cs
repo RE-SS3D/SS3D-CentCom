@@ -23,9 +23,9 @@ namespace CentCom.Services
                 throw new ValidationException($"{email} is not a valid email address.");
             }
 
-            if (!Regex.IsMatch(password, "[a-zA-Z0-9@.!_+=#$%^&*?|{}()]"))
+            if (Regex.IsMatch(password, "[<>'\"`]"))
             {
-                throw new ValidationException("Password may only contain latin alphanumeric and . ! _ + = # $ % ^ & * ? | { } ( ) characters.");
+                throw new ValidationException("Password may not contain < > \" ' ` characters.");
             }
         }
     }
