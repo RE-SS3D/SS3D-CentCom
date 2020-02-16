@@ -1,22 +1,26 @@
 using System;
 using System.Net;
 using System.Linq;
-using Xunit;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+using Xunit.Abstractions;
 using CentCom.Tests.Models;
 using CentCom.Models;
 using CentCom.Controllers;
 using CentCom.Tests.Services;
-using Microsoft.AspNetCore.Mvc;
 
 namespace CentCom.Tests.Controllers
 {
     public class ServersControllerTests
     {
-        public ServersControllerTests()
+        public ServersControllerTests(ITestOutputHelper output)
         {
+            logger = new NullLogger<ServersController>();
             // Reset data after every test.
             MockDataContext.Reset();
         }
@@ -42,7 +46,7 @@ namespace CentCom.Tests.Controllers
 
             // Use a separate, fresh context for testing.
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService());
+                var controller = new ServersController(context, new MockClientInfoService(), logger);
                 
                 IEnumerable<Server> servers = await controller.GetServers().ToListAsync();
                 Assert.Equal(2, servers.Count());
@@ -55,14 +59,14 @@ namespace CentCom.Tests.Controllers
         {
             var endPoint = new IPEndPoint(IPAddress.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 15006);
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
 
                 var result = controller.PostNewServer(new Dtos.ServerDto { Name = "Server A" });
                 Assert.Equal(StatusCodes.Status201Created, (result as IStatusCodeActionResult).StatusCode);
             }
             
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
                 var servers = await controller.GetServers().ToListAsync();
                 Assert.Single(servers);
                 Assert.Equal(endPoint, servers[0].Address);
@@ -81,14 +85,14 @@ namespace CentCom.Tests.Controllers
             }
 
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
 
                 var result = controller.PostNewServer(new Dtos.ServerDto { Name = "Server A" });
                 Assert.Equal(StatusCodes.Status409Conflict, (result as IStatusCodeActionResult).StatusCode);
             }
 
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
                 var servers = await controller.GetServers().ToListAsync();
                 Assert.Single(servers);
                 Assert.Equal("Server Not A", servers[0].Name); // Nothing about the original entry should have changed.
@@ -101,7 +105,7 @@ namespace CentCom.Tests.Controllers
             using var context = MockDataContext.GetContext();
             var endPoint = new IPEndPoint(101, 1001);
 
-            var controller = new ServersController(context, new MockClientInfoService(endPoint));
+            var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
             // Test the Put was successful
             var result = controller.PutServer(endPoint.ToString(), new Dtos.ServerDto { Name = "Test Server" });
 
@@ -123,7 +127,7 @@ namespace CentCom.Tests.Controllers
 
             // Use a separate, fresh context for testing.
             using (var context = MockDataContext.GetContext()) {
-                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
 
                 var result = controller.PutServer(endPoint.ToString(), new Dtos.ServerDto { Name = "Not A" });
 
@@ -146,7 +150,7 @@ namespace CentCom.Tests.Controllers
 
             // SETUP
             var endPoint = new IPEndPoint(100, 1);
-            var controller = new ServersController(context, new MockClientInfoService(endPoint));
+            var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
 
             // Create the server entry
             controller.PutServer(endPoint.ToString(), new Dtos.ServerDto { Name = "A" });
@@ -173,7 +177,7 @@ namespace CentCom.Tests.Controllers
         {
             var endPoint = new IPEndPoint(100, 1);
             using var context = MockDataContext.GetContext();
-            var controller = new ServersController(context, new MockClientInfoService(endPoint));
+            var controller = new ServersController(context, new MockClientInfoService(endPoint), logger);
 
             // Note: This assumes the resource format
             var response = controller.PostHeartBeatUpdate(endPoint.ToString());
@@ -185,7 +189,7 @@ namespace CentCom.Tests.Controllers
         public void PostServerHeartBeat_WithBadForm_GivesBadRequest()
         {
             using var context = MockDataContext.GetContext();
-            var controller = new ServersController(context, new MockClientInfoService());
+            var controller = new ServersController(context, new MockClientInfoService(), logger);
 
             var response = controller.PostHeartBeatUpdate("fsafsfa");
 
@@ -198,17 +202,68 @@ namespace CentCom.Tests.Controllers
             var endPoint = new IPEndPoint(100, 1);
             using var context = MockDataContext.GetContext();
             // Setup
-            var firstController = new ServersController(context, new MockClientInfoService(endPoint));
+            var firstController = new ServersController(context, new MockClientInfoService(endPoint), logger);
             // Create the server entry
             firstController.PutServer(endPoint.ToString(), new Dtos.ServerDto { Name = "A" });
 
             // Test
-            var secondController = new ServersController(context, new MockClientInfoService(101, 1));
+            var secondController = new ServersController(context, new MockClientInfoService(101, 1), logger);
 
             // Actual Test
             var response = secondController.PostHeartBeatUpdate(endPoint.ToString());
 
             Assert.IsType<ForbidResult>(response);
         }
+    
+/*        [Fact]
+        public void Delete_WithExisting_IsSuccessful()
+        {
+            var endPoint = new IPEndPoint(100, 1);
+            using (var context = MockDataContext.GetContext()) {
+                context.Servers.Add(new Server { Address = endPoint, Name = "Server", LastUpdate = DateTime.Now });
+                context.SaveChanges();
+            }
+
+            using (var context = MockDataContext.GetContext()) {
+                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+                
+                IActionResult response = controller.DeleteServer(endPoint.ToString());
+                
+                Assert.Equal(StatusCodes.Status204NoContent, (response as IStatusCodeActionResult).StatusCode);
+            }
+        }
+
+        [Fact]
+        public void Delete_WithNonExistant_GivesNotFound()
+        {
+            var endPoint = new IPEndPoint(100, 1);
+            using var context = MockDataContext.GetContext();
+            var controller = new ServersController(context, new MockClientInfoService(endPoint));
+
+            IActionResult response = controller.DeleteServer(endPoint.ToString());
+
+            Assert.Equal(StatusCodes.Status404NotFound, (response as IStatusCodeActionResult).StatusCode);
+        }
+
+        [Fact]
+        public void Delete_WithDifferentIp_IsForbidden()
+        {
+            var endPoint = new IPEndPoint(100, 1);
+            using (var context = MockDataContext.GetContext()) {
+                context.Servers.Add(new Server { Address = endPoint, Name = "Server", LastUpdate = DateTime.Now });
+                context.SaveChanges();
+            }
+
+            endPoint = new IPEndPoint(101, 1);
+            using (var context = MockDataContext.GetContext()) {
+                var controller = new ServersController(context, new MockClientInfoService(endPoint));
+
+                IActionResult response = controller.DeleteServer(endPoint.ToString());
+
+                Assert.Equal(StatusCodes.Status204NoContent, (response as IStatusCodeActionResult).StatusCode);
+            }
+        }*/
+
+        private readonly ILogger<ServersController> logger;
     }
 }

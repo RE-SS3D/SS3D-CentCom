@@ -37,10 +37,8 @@ namespace CentCom.Tests.Models
                 .Options;
 
             // Create the schema in the database
-            using (var context = new DataContext(options))
-            {
-                context.Database.EnsureCreated();
-            }
+            using var context = new DataContext(options);
+            context.Database.EnsureCreated();
         }
 
         private static SqliteConnection connection;

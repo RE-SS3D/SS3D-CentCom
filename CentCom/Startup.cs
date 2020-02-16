@@ -10,6 +10,7 @@ using CentCom.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -33,7 +34,8 @@ namespace CentCom
         {
             services.AddCors();
             services.AddDbContext<DataContext>(options =>
-                options.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseMySql(Configuration.GetConnectionString("DefaultConnection"))
+            );
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             // configure strongly typed settings objects
@@ -81,6 +83,7 @@ namespace CentCom
                 });
 
             // configure DI for application services
+            services.AddHttpContextAccessor();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<ICredentialValidationService, CredentialValidationService>();
@@ -88,16 +91,20 @@ namespace CentCom
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
+            app.UseRouting();
+
             app.UseCors(x => x
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
-
             app.UseAuthentication();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
 
-            app.UseMvc();
+            app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
 }

@@ -22,7 +22,7 @@ namespace CentCom.Services
         {
             var context = httpContextAccessor.HttpContext;
 
-            return new IPEndPoint(context.Connection.RemoteIpAddress, context.Connection.RemotePort);
+            return new IPEndPoint(context.Connection.RemoteIpAddress ?? IPAddress.Loopback, context.Connection.RemotePort);
         }
 
         private readonly IHttpContextAccessor httpContextAccessor;

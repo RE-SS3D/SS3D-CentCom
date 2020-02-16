@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using CentCom.Dtos;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using CentCom.Interfaces;
 using CentCom.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CentCom.Controllers
 {
@@ -20,12 +21,14 @@ namespace CentCom.Controllers
     [ApiController]
     public class ServersController : ControllerBase
     {
-        public ServersController(DataContext dataContext, IClientInfoService clientInfoService)
+        public ServersController(DataContext dataContext, IClientInfoService clientInfoService, ILogger<ServersController> logger)
         {
+            this.logger = logger;
             this.dataContext = dataContext;
             this.clientInfoService = clientInfoService;
         }
 
+        [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IAsyncEnumerable<Server> GetServers()
         {
@@ -45,6 +48,7 @@ namespace CentCom.Controllers
          * <returns>The created object, along with the url to it in the Location header. Otherwise a 409 if already exists.</returns>
          * Note: If you already know how to generate an ID from the server info (namely endpoint), you can use <see cref="PutServer(string, ServerDto)"/>
          */
+        [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesDefaultResponseType]
@@ -70,7 +74,7 @@ namespace CentCom.Controllers
         /**
          * <summary>Creates server at place, or updates existing server. Will return Create or OK.</summary>
          */
-        [Route("{id}")]
+        [HttpPut("{id}")]
         [ProducesResponseType(typeof(Server), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(Server), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
@@ -139,6 +143,7 @@ namespace CentCom.Controllers
         /**
          * <summary>No real reason to use this...</summary>
          */
+        [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -158,6 +163,7 @@ namespace CentCom.Controllers
 
         private static readonly TimeSpan SERVER_TIMEOUT_PERIOD = TimeSpan.FromMinutes(5);
 
+        private readonly ILogger<ServersController> logger;
         private readonly DataContext dataContext;
         private readonly IClientInfoService clientInfoService;
     }
