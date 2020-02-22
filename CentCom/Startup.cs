@@ -37,7 +37,7 @@ namespace CentCom
                 options.UseMySql(Configuration.GetConnectionString("DefaultConnection"))
             );
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-
+            
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -93,6 +93,9 @@ namespace CentCom
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
+            if (app is null)
+                throw new ArgumentNullException(nameof(app));
+
             app.UseRouting();
 
             app.UseCors(x => x
@@ -105,6 +108,16 @@ namespace CentCom
             });
 
             app.UseEndpoints(endpoints => endpoints.MapControllers());
+
+            // Ensure the database is set up
+            using (var serviceScope = app.ApplicationServices
+                .GetRequiredService<IServiceScopeFactory>()
+                .CreateScope())
+            {
+                using (var context = serviceScope.ServiceProvider.GetService<DataContext>()) {
+                    context.Database.Migrate();
+                }
+            }
         }
     }
 }

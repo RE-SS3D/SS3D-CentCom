@@ -17,6 +17,7 @@ namespace CentCom.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             Contract.Requires(modelBuilder != null);
+            base.OnModelCreating(modelBuilder);
 
             // Set the Server primary key to be based off ip and port.
             modelBuilder.Entity<Server>().HasKey(s => new { s.Ip, s.Port });
