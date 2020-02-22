@@ -46,7 +46,9 @@ namespace CentCom.Controllers
          * Used to create a server. Most important for providing the route at which to update info and send heartbeat.
          * </summary>
          * <returns>The created object, along with the url to it in the Location header. Otherwise a 409 if already exists.</returns>
+         * <remarks>
          * Note: If you already know how to generate an ID from the server info (namely endpoint), you can use <see cref="PutServer(string, ServerDto)"/>
+         * </remarks>
          */
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -58,6 +60,7 @@ namespace CentCom.Controllers
                 throw new ArgumentNullException(nameof(serverInput));
 
             var endPoint = clientInfoService.GetClientEndpoint();
+            logger.LogInformation($"Client-Server located at {endPoint}");
 
             var server = serverInput.ToServer(endPoint);
             try {
@@ -72,7 +75,7 @@ namespace CentCom.Controllers
         }
 
         /**
-         * <summary>Creates server at place, or updates existing server. Will return Create or OK.</summary>
+         * <summary>Creates server at place, or updates existing server. Also updates heartbeat. Will return Create or OK.</summary>
          */
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(Server), StatusCodes.Status200OK)]
@@ -88,7 +91,9 @@ namespace CentCom.Controllers
 
             // We check the ip and port directly against the connection to at least somewhat prevent a malicious spoof.
             // TODO: To further prevent spoofing we need to issue a challenge back to the server.
-            if (!endPoint.Equals(clientInfoService.GetClientEndpoint()))
+            var clientEndpoint = clientInfoService.GetClientEndpoint();
+            logger.LogInformation($"Client-Server located at {clientEndpoint}");
+            if (!endPoint.Equals(clientEndpoint))
                 return Forbid();
 
             // Add or update the entry
@@ -141,7 +146,7 @@ namespace CentCom.Controllers
         }
 
         /**
-         * <summary>No real reason to use this...</summary>
+         * <summary>No real reason to use this, but helps in some cases anyway.</summary>
          */
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -162,6 +167,8 @@ namespace CentCom.Controllers
         }
 
         private static readonly TimeSpan SERVER_TIMEOUT_PERIOD = TimeSpan.FromMinutes(5);
+
+        private readonly Random challengeSource = new Random();
 
         private readonly ILogger<ServersController> logger;
         private readonly DataContext dataContext;
