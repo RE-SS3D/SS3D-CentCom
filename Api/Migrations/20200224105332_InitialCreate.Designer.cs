@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace CentCom.Migrations
+namespace Api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20200216114715_InitialCreate")]
+    [Migration("20200224105332_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,23 +36,57 @@ namespace CentCom.Migrations
                     b.ToTable("Characters");
                 });
 
-            modelBuilder.Entity("CentCom.Models.Server", b =>
+            modelBuilder.Entity("CentCom.Models.GameServer", b =>
                 {
-                    b.Property<byte[]>("Ip")
-                        .HasColumnType("varbinary(16)")
-                        .HasMaxLength(16);
+                    b.Property<string>("Address")
+                        .HasColumnType("varchar(255) CHARACTER SET utf8mb4");
 
-                    b.Property<int>("Port")
+                    b.Property<int>("QueryPort")
                         .HasColumnType("int");
+
+                    b.Property<string>("Branch")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Game")
+                        .IsRequired()
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<int>("GamePort")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Gamemode")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<DateTime>("LastUpdate")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Map")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<int?>("MaxPlayers")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
-                    b.HasKey("Ip", "Port");
+                    b.Property<int>("Players")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RoundStartTime")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("RoundStatus")
+                        .IsRequired()
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("TagLine")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.HasKey("Address", "QueryPort");
 
                     b.ToTable("Servers");
                 });

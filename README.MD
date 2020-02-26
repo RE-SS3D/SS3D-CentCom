@@ -13,3 +13,9 @@ RESTful API for managing user registration, authentication and character storage
 
 ### API SPEC
 A swagger specification for the API can be found in the [docs folder]((docs/swagger.yaml)).
+
+TODO:
+
+update migration needs to unload all projects
+
+running integrations requires locally running mysql instance.

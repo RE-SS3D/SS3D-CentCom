@@ -38,6 +38,8 @@ namespace CentCom
             );
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             
+            
+
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -45,11 +47,7 @@ namespace CentCom
             // configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();
             var key = Encoding.ASCII.GetBytes(appSettings.Secret);
-            services.AddAuthentication(x =>
-                {
-                    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(x =>
                 {
                     x.Events = new JwtBearerEvents
@@ -87,7 +85,6 @@ namespace CentCom
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<ICredentialValidationService, CredentialValidationService>();
-            services.AddScoped<IClientInfoService, ClientInfoService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

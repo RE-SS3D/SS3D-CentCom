@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using CentCom.Dtos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using CentCom.Interfaces;
+using Newtonsoft.Json.Linq;
 using CentCom.Models;
 
 namespace CentCom.Controllers
@@ -21,16 +22,21 @@ namespace CentCom.Controllers
     [ApiController]
     public class ServersController : ControllerBase
     {
-        public ServersController(DataContext dataContext, IClientInfoService clientInfoService, ILogger<ServersController> logger)
+        public class ConnectionResponseObject
         {
-            this.logger = logger;
+            public int challenge;
+        }
+
+        public ServersController(DataContext dataContext, IHttpClientFactory httpClientFactory, ILogger<ServersController> logger)
+        {
             this.dataContext = dataContext;
-            this.clientInfoService = clientInfoService;
+            this.httpClientFactory = httpClientFactory;
+            this.logger = logger;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IAsyncEnumerable<Server> GetServers()
+        public IAsyncEnumerable<GameServer> GetServers()
         {
             // Remove all servers outside of timeout
             // TODO: Should be an easier way that doesn't require a get, then set, then get of the entire list.
@@ -46,23 +52,28 @@ namespace CentCom.Controllers
          * Used to create a server. Most important for providing the route at which to update info and send heartbeat.
          * </summary>
          * <returns>The created object, along with the url to it in the Location header. Otherwise a 409 if already exists.</returns>
-         * <remarks>
-         * Note: If you already know how to generate an ID from the server info (namely endpoint), you can use <see cref="PutServer(string, ServerDto)"/>
-         * </remarks>
          */
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status424FailedDependency)]
         [ProducesDefaultResponseType]
-        public IActionResult PostNewServer(ServerDto serverInput)
+        public async Task<IActionResult> PostNewServer(GameServer server)
         {
-            if (serverInput is null)
-                throw new ArgumentNullException(nameof(serverInput));
+            if (server is null)
+                throw new ArgumentNullException(nameof(server));
 
-            var endPoint = clientInfoService.GetClientEndpoint();
-            logger.LogInformation($"Client-Server located at {endPoint}");
+            // Fill in any missing server info
+            if (server.Address == null)
+                server.Address = HttpContext?.Connection?.RemoteIpAddress.ToString();
 
-            var server = serverInput.ToServer(endPoint);
+            logger.LogInformation($"GameServer located at {server.Address}");
+
+            bool result = await ConnectToGameServer(server.GetQueryEndPoint()).ConfigureAwait(false);
+
+            if (!result)
+                return new StatusCodeResult(StatusCodes.Status424FailedDependency);
+
             try {
                 dataContext.Servers.Add(server);
                 dataContext.SaveChanges();
@@ -71,48 +82,48 @@ namespace CentCom.Controllers
                 return Conflict();
             }
 
-            return CreatedAtAction("GetServerById", new { id = endPoint.ToString() }, server);
+            return CreatedAtAction("GetServerById", new { id = server.GetQueryEndPoint().ToString() }, server);
         }
 
         /**
-         * <summary>Creates server at place, or updates existing server. Also updates heartbeat. Will return Create or OK.</summary>
+         * <summary>Updates an existing server. Also updates heartbeat.</summary>
          */
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(Server), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(Server), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(GameServer), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GameServer), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-        public IActionResult PutServer(string id, ServerDto serverInput)
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        public IActionResult PutServer(string id, GameServer serverInput)
         {
-            if(!IPEndPoint.TryParse(id, out IPEndPoint endPoint))
+            if(!IPEndPoint.TryParse(id, out IPEndPoint queryEndPoint))
                 return BadRequest("Incorrect id");
 
             if (serverInput is null)
                 throw new ArgumentNullException(nameof(serverInput));
 
-            // We check the ip and port directly against the connection to at least somewhat prevent a malicious spoof.
-            // TODO: To further prevent spoofing we need to issue a challenge back to the server.
-            var clientEndpoint = clientInfoService.GetClientEndpoint();
-            logger.LogInformation($"Client-Server located at {clientEndpoint}");
-            if (!endPoint.Equals(clientEndpoint))
+            if (!CheckSourceIsServer(queryEndPoint))
                 return Forbid();
 
-            // Add or update the entry
-            var newServer = dataContext.Servers.Find(endPoint.Address.GetAddressBytes(), endPoint.Port);
-            bool isUpdated = newServer != null;
-            if(isUpdated) {
-                newServer.Name = serverInput.Name;
-                newServer.LastUpdate = DateTime.Now;
-            }
-            else {
-                var entry = dataContext.Servers.Add(serverInput.ToServer(endPoint));
-                newServer = entry.Entity;
-            }
+            // Must preserve primary key values
+            if (string.IsNullOrEmpty(serverInput.Address))
+                serverInput.Address = queryEndPoint.Address.ToString();
+            if (serverInput.QueryPort == 0)
+                serverInput.QueryPort = queryEndPoint.Port;
+
+            if (serverInput.Address != queryEndPoint.Address.ToString() || serverInput.QueryPort != queryEndPoint.Port)
+                return BadRequest("Cannot modify endpoint or query point.");
+
+            serverInput.LastUpdate = DateTime.Now;
+
+            // Update the entry
+            var foundServer = dataContext.Servers.Find(GameServer.ToKeyList(queryEndPoint));
+            if (foundServer == null)
+                return NotFound();
+
+            dataContext.Entry(foundServer).CurrentValues.SetValues(serverInput);
             dataContext.SaveChanges();
 
-            if (isUpdated)
-                return Ok(newServer);
-            else
-                return CreatedAtAction("GetServerById", new { id }, newServer);
+            return Ok();
         }
 
         /**
@@ -127,15 +138,13 @@ namespace CentCom.Controllers
         public IActionResult PostHeartBeatUpdate(string id)
         {
             // Get the endpoint referred to
-            if (!IPEndPoint.TryParse(id, out IPEndPoint endPoint))
+            if (!IPEndPoint.TryParse(id, out IPEndPoint queryEndPoint))
                 return BadRequest("Id is not of valid ip format");
 
-            // For now assert that the given endpoint is equal to the source.
-            // TODO: Determine whether to issue challenge instead of checking like this, or have no protections whatsoever
-            if (!endPoint.Equals(clientInfoService.GetClientEndpoint()))
+            if (!CheckSourceIsServer(queryEndPoint))
                 return Forbid();
 
-            var serverObject = dataContext.Servers.Find(endPoint.Address.GetAddressBytes(), endPoint.Port);
+            var serverObject = dataContext.Servers.Find(GameServer.ToKeyList(queryEndPoint));
             if (serverObject != null) {
                 serverObject.LastUpdate = DateTime.Now;
                 dataContext.SaveChanges();
@@ -153,12 +162,12 @@ namespace CentCom.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        public ActionResult<Server> GetServerById(string id)
+        public ActionResult<GameServer> GetServerById(string id)
         {
             if (!IPEndPoint.TryParse(id, out IPEndPoint endPoint))
                 return BadRequest("Id is not of valid ip format");
 
-            var server = dataContext.Servers.Find(endPoint.Address.GetAddressBytes(), endPoint.Port);
+            var server = dataContext.Servers.Find(GameServer.ToKeyList(endPoint));
 
             if (server == null)
                 return NotFound();
@@ -166,12 +175,83 @@ namespace CentCom.Controllers
             return server;
         }
 
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
+        public IActionResult DeleteServer(string id)
+        {
+            if (!IPEndPoint.TryParse(id, out IPEndPoint endPoint))
+                return BadRequest("Id is not of valid ip format");
+
+            // TODO: Not performant. Should ideally be a single request.
+            var server = dataContext.Servers.Find(GameServer.ToKeyList(endPoint));
+
+            if (server == null)
+                return NotFound();
+
+            dataContext.Servers.Remove(server);
+            dataContext.SaveChanges();
+
+            return NoContent();
+        }
+
+
+        /**
+         * <summary>Attempts to verify the connection to the given game server.</summary>
+         * <param name="hostName">A DNS HostName or IP Address</param>
+         * <param name="port">The query port of the game server</param>
+         * <returns>Whether the connection was valid.</returns>
+         */
+        private async Task<bool> ConnectToGameServer(IPEndPoint queryEndPoint)
+        {
+            using HttpClient client = httpClientFactory.CreateClient();
+
+            // Setup a request to the game server to verify that it exists
+            client.BaseAddress = new UriBuilder("http", queryEndPoint.Address.ToString(), queryEndPoint.Port).Uri;
+
+            int challenge = challengeSource.Next();
+
+            var query = HttpUtility.ParseQueryString("");
+            query["master"] = Request?.Host.Host ?? "unknown";
+            query["version"] = HttpContext?.GetRequestedApiVersion().ToString() ?? "0.0.0";
+            query["challenge"] = challenge.ToString(CultureInfo.CurrentCulture);
+
+            var uri = new Uri($"/connect?{query.ToString()}", UriKind.Relative);
+            try {
+                // Make the actual request
+                var response = await client.PostAsync(uri, null).ConfigureAwait(false);
+
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return false;
+
+                // Check the challenge in the body is correct
+                var content = JObject.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                return content["challenge"].ToObject<int>() == challenge;
+            }
+            catch (HttpRequestException e) {
+                logger.LogWarning(e, $"Failed to connect to game server at {queryEndPoint}. Dropping connection.");
+                return false;
+            }
+        }
+
+        private bool CheckSourceIsServer(IPEndPoint queryEndpoint)
+        {
+            // We check the ip (but not port due to NAT) directly against the connection to at least somewhat prevent a malicious spoof.
+            // TODO: To further prevent spoofing we need to issue a challenge back to the server.
+            var clientAddress = HttpContext.Connection.RemoteIpAddress;
+
+            logger.LogInformation($"Connection coming from {clientAddress}");
+            return queryEndpoint.Address.Equals(clientAddress);
+        }
+
         private static readonly TimeSpan SERVER_TIMEOUT_PERIOD = TimeSpan.FromMinutes(5);
 
         private readonly Random challengeSource = new Random();
 
-        private readonly ILogger<ServersController> logger;
         private readonly DataContext dataContext;
-        private readonly IClientInfoService clientInfoService;
+        private readonly IHttpClientFactory httpClientFactory;
+        private readonly ILogger<ServersController> logger;
     }
 }

@@ -12,15 +12,11 @@ namespace CentCom.Models
 
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
-        public DbSet<Server> Servers { get; set; }
+        public DbSet<GameServer> Servers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            Contract.Requires(modelBuilder != null);
-            base.OnModelCreating(modelBuilder);
-
-            // Set the Server primary key to be based off ip and port.
-            modelBuilder.Entity<Server>().HasKey(s => new { s.Ip, s.Port });
+            modelBuilder.Entity<GameServer>().HasKey(u => new { u.Address, u.QueryPort });
         }
     }
 }

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace CentCom.Migrations
+namespace Api.Migrations
 {
     public partial class InitialCreate : Migration
     {
@@ -26,14 +26,25 @@ namespace CentCom.Migrations
                 name: "Servers",
                 columns: table => new
                 {
-                    Ip = table.Column<byte[]>(maxLength: 16, nullable: false),
-                    Port = table.Column<int>(nullable: false),
+                    Address = table.Column<string>(nullable: false),
+                    QueryPort = table.Column<int>(nullable: false),
                     Name = table.Column<string>(nullable: false),
+                    TagLine = table.Column<string>(nullable: true),
+                    GamePort = table.Column<int>(nullable: false),
+                    Players = table.Column<int>(nullable: false),
+                    MaxPlayers = table.Column<int>(nullable: true),
+                    RoundStatus = table.Column<string>(nullable: false),
+                    RoundStartTime = table.Column<DateTime>(nullable: false),
+                    Map = table.Column<string>(nullable: true),
+                    Gamemode = table.Column<string>(nullable: true),
+                    Game = table.Column<string>(nullable: false),
+                    Branch = table.Column<string>(nullable: true),
+                    Version = table.Column<string>(nullable: true),
                     LastUpdate = table.Column<DateTime>(nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Servers", x => new { x.Ip, x.Port });
+                    table.PrimaryKey("PK_Servers", x => new { x.Address, x.QueryPort });
                 });
 
             migrationBuilder.CreateTable(
