@@ -1,6 +1,6 @@
-using CentCom.Models;
+using Api.Models;
 
-namespace CentCom.Interfaces
+namespace Api.Interfaces
 {
     public interface IUserService
     {

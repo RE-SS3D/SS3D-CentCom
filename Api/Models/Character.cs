@@ -1,6 +1,6 @@
-using CentCom.Dtos;
+using Api.Dtos;
 
-namespace CentCom.Models
+namespace Api.Models
 {
     public class Character
     {

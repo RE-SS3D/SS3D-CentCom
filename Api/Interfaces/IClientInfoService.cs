@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace CentCom.Interfaces
+namespace Api.Interfaces
 {
     /**
      * <summary>Helps to get information about the client</summary>

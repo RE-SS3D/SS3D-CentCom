@@ -1,6 +1,6 @@
-using CentCom.Models;
+using Api.Models;
 
-namespace CentCom.Dtos
+namespace Api.Dtos
 {
     public class CharactersResponse
     {

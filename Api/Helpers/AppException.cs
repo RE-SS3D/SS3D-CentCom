@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace CentCom.Helpers
+namespace Api.Helpers
 {
     public class AppException : Exception
     {

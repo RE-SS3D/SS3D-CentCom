@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using CentCom.Helpers;
-using CentCom.Interfaces;
-using CentCom.Models;
+using Api.Helpers;
+using Api.Interfaces;
+using Api.Models;
 
-namespace CentCom.Services
+namespace Api.Services
 {
     public class UserService : IUserService
     {

@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
-using CentCom.Interfaces;
+using Api.Interfaces;
 
-namespace CentCom.Services
+namespace Api.Services
 {
     public class CredentialValidationService : ICredentialValidationService
     {

@@ -3,10 +3,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using CentCom.Helpers;
-using CentCom.Interfaces;
-using CentCom.Models;
-using CentCom.Services;
+using Api.Helpers;
+using Api.Interfaces;
+using Api.Models;
+using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Pomelo.EntityFrameworkCore.MySql;
 
-namespace CentCom
+namespace Api
 {
     public class Startup
     {
@@ -37,8 +37,6 @@ namespace CentCom
                 options.UseMySql(Configuration.GetConnectionString("DefaultConnection"))
             );
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-            
-            
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -85,6 +83,7 @@ namespace CentCom
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<ICredentialValidationService, CredentialValidationService>();
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -105,16 +104,6 @@ namespace CentCom
             });
 
             app.UseEndpoints(endpoints => endpoints.MapControllers());
-
-            // Ensure the database is set up
-            using (var serviceScope = app.ApplicationServices
-                .GetRequiredService<IServiceScopeFactory>()
-                .CreateScope())
-            {
-                using (var context = serviceScope.ServiceProvider.GetService<DataContext>()) {
-                    context.Database.Migrate();
-                }
-            }
         }
     }
 }

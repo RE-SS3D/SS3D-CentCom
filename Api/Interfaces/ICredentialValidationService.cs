@@ -1,4 +1,4 @@
-namespace CentCom.Interfaces
+namespace Api.Interfaces
 {
     public interface ICredentialValidationService
     {

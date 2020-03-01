@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.Contracts;
 
-namespace CentCom.Models
+namespace Api.Models
 {
     public class DataContext : DbContext
     {

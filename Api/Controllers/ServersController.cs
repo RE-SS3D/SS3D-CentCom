@@ -11,9 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using CentCom.Models;
+using Api.Models;
+using Newtonsoft.Json;
 
-namespace CentCom.Controllers
+namespace Api.Controllers
 {
     /**
      * <summary>Maintains a list of servers that can be retrieved and queried</summary>
@@ -60,19 +61,22 @@ namespace CentCom.Controllers
         [ProducesDefaultResponseType]
         public async Task<IActionResult> PostNewServer(GameServer server)
         {
-            if (server is null)
-                throw new ArgumentNullException(nameof(server));
-
             // Fill in any missing server info
             if (server.Address == null)
-                server.Address = HttpContext?.Connection?.RemoteIpAddress.ToString();
+                server.Address = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? IPAddress.Loopback.ToString();
 
             logger.LogInformation($"GameServer located at {server.Address}");
+
+            // For now, ensure correct source to prevent DOS abuse.
+            if (!CheckSourceIsServer(server.GetQueryEndPoint()))
+                return Forbid();
 
             bool result = await ConnectToGameServer(server.GetQueryEndPoint()).ConfigureAwait(false);
 
             if (!result)
                 return new StatusCodeResult(StatusCodes.Status424FailedDependency);
+
+            server.LastUpdate = DateTime.Now;
 
             try {
                 dataContext.Servers.Add(server);
@@ -215,7 +219,7 @@ namespace CentCom.Controllers
 
             var query = HttpUtility.ParseQueryString("");
             query["master"] = Request?.Host.Host ?? "unknown";
-            query["version"] = HttpContext?.GetRequestedApiVersion().ToString() ?? "0.0.0";
+            query["version"] = "0.0.0"; // TODO
             query["challenge"] = challenge.ToString(CultureInfo.CurrentCulture);
 
             var uri = new Uri($"/connect?{query.ToString()}", UriKind.Relative);
@@ -223,24 +227,37 @@ namespace CentCom.Controllers
                 // Make the actual request
                 var response = await client.PostAsync(uri, null).ConfigureAwait(false);
 
-                if (response.StatusCode != HttpStatusCode.OK)
+                if (response.StatusCode != HttpStatusCode.OK) {
+                    logger.LogWarning($"Recieved non-good response code {response.StatusCode}. Not accepting connection.");
                     return false;
+                }
 
                 // Check the challenge in the body is correct
                 var content = JObject.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-                return content["challenge"].ToObject<int>() == challenge;
+                
+                if(content["challenge"].ToObject<int>() != challenge) {
+                    logger.LogWarning("Recieved incorrect challenge code?? Not accepting connection");
+                    return false;
+                }
+
+                return true;
             }
             catch (HttpRequestException e) {
                 logger.LogWarning(e, $"Failed to connect to game server at {queryEndPoint}. Dropping connection.");
                 return false;
             }
+            catch (JsonReaderException e) {
+                logger.LogWarning(e, "Failed to get challenge object back. Dropping connection");
+            }
+
+            return true;
         }
 
         private bool CheckSourceIsServer(IPEndPoint queryEndpoint)
         {
             // We check the ip (but not port due to NAT) directly against the connection to at least somewhat prevent a malicious spoof.
             // TODO: To further prevent spoofing we need to issue a challenge back to the server.
-            var clientAddress = HttpContext.Connection.RemoteIpAddress;
+            var clientAddress = HttpContext.Connection.RemoteIpAddress ?? IPAddress.Loopback;
 
             logger.LogInformation($"Connection coming from {clientAddress}");
             return queryEndpoint.Address.Equals(clientAddress);

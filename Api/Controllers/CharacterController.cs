@@ -1,13 +1,13 @@
 using System;
 using System.Linq;
-using CentCom.Dtos;
-using CentCom.Helpers;
-using CentCom.Interfaces;
-using CentCom.Models;
+using Api.Dtos;
+using Api.Helpers;
+using Api.Interfaces;
+using Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CentCom.Controllers
+namespace Api.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]

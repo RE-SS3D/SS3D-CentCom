@@ -1,4 +1,4 @@
-namespace CentCom.Dtos
+namespace Api.Dtos
 {
     public class AuthenticateRequest
     {

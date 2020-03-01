@@ -1,4 +1,4 @@
-namespace CentCom.Helpers
+namespace Api.Helpers
 {
     public class AppSettings
     {

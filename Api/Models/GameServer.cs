@@ -5,7 +5,7 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace CentCom.Models
+namespace Api.Models
 {
     public class GameServer
     {
@@ -13,7 +13,6 @@ namespace CentCom.Models
         /// Name of the server
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public string Name { get; set; }
         /// <summary>
         /// Optional. Custom text appearing below name.
@@ -23,21 +22,18 @@ namespace CentCom.Models
         /// <summary>
         /// The ip, e.g. 127.0.0.1
         /// </summary>
-        [Required]
         public string Address { get; set; } // As a hostname or ip
 
         /// <summary>
         /// Port used for connecting to the game.
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public int QueryPort { get; set; }
 
         /// <summary>
         /// Port used for querying game information. All http requests should go to here. Only has to be present in POST /api/servers.
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public int GamePort { get; set; }
 
         public int Players { get; set; }
@@ -50,13 +46,11 @@ namespace CentCom.Models
         /// Ideally should be one of "restarting" | "lobby" | "playing"
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public string RoundStatus { get; set; }
         /// <summary>
         /// Time since last round status change
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public DateTime RoundStartTime { get; set; }
 
         public string Map { get; set; }
@@ -66,7 +60,6 @@ namespace CentCom.Models
         /// Should almost always be "SS3D". Different codebases should change 'branch' instead.
         /// </summary>
         [Required]
-        [JsonProperty(Required = Required.Always)]
         public string Game { get; set; }
 
         /// <summary>
@@ -79,7 +72,6 @@ namespace CentCom.Models
         /// </summary>
         public string Version { get; set; }
 
-        [Required]
         public DateTime LastUpdate { get; set; }
 
         public IPEndPoint GetQueryEndPoint()

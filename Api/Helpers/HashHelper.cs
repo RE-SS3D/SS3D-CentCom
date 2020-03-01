@@ -1,6 +1,6 @@
 using System;
 
-namespace CentCom.Helpers
+namespace Api.Helpers
 {
     public class HashHelper
     {
