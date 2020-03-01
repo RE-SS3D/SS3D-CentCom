@@ -9,16 +9,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-using CentCom.Tests.Models;
-using CentCom.Models;
-using CentCom.Controllers;
+using Api.Tests.Models;
+using Api.Models;
+using Api.Controllers;
 using Api.UnitTests.Helpers;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace CentCom.Tests.Controllers
+namespace Api.Tests.Controllers
 {
     public class ServersControllerTests
     {
@@ -84,10 +84,13 @@ namespace CentCom.Tests.Controllers
                 // A mock which returns the input challenge.
                 var controller = new ServersController(context, ConstructChallengeRespondingMock(), logger);
 
+                var endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 100);
+                MockControllerConnection(controller, endPoint.Address);
+
                 var result = await controller.PostNewServer(new GameServer {
                     Name = "Server A",
-                    Address = "127.0.0.1",
-                    QueryPort = 100,
+                    Address = endPoint.Address.ToString(),
+                    QueryPort = endPoint.Port,
                     GamePort = 100,
                     RoundStatus = "starting",
                     RoundStartTime = DateTime.Now,
@@ -98,6 +101,34 @@ namespace CentCom.Tests.Controllers
             
             using (var context = MockDataContext.GetContext()) {
                 Assert.Single(context.Servers);
+            }
+        }
+
+        [Fact]
+        public async void PostNewServer_WithoutAddress_FillsItIn()
+        {
+            using (var context = MockDataContext.GetContext()) {
+                // A mock which returns the input challenge.
+                var controller = new ServersController(context, ConstructChallengeRespondingMock(), logger);
+
+                var endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 100);
+                MockControllerConnection(controller, endPoint.Address);
+
+                var result = await controller.PostNewServer(new GameServer {
+                    Name = "Server A",
+                    QueryPort = endPoint.Port,
+                    GamePort = 100,
+                    RoundStatus = "starting",
+                    RoundStartTime = DateTime.Now,
+                    Game = "SS3D"
+                }).ConfigureAwait(false);
+                Assert.Equal(StatusCodes.Status201Created, (result as IStatusCodeActionResult).StatusCode);
+            }
+
+            using (var context = MockDataContext.GetContext()) {
+                var server = Assert.Single(context.Servers);
+
+                Assert.Equal("127.0.0.1", server.Address);
             }
         }
 
@@ -122,10 +153,13 @@ namespace CentCom.Tests.Controllers
             using (var context = MockDataContext.GetContext()) {
                 var controller = new ServersController(context, ConstructChallengeRespondingMock(), logger);
 
+                var endPoint = new IPEndPoint(IPAddress.Parse("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 100);
+                MockControllerConnection(controller, endPoint.Address);
+
                 var result = await controller.PostNewServer(new GameServer {
                     Name = "Server A",
-                    Address = "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-                    QueryPort = 100,
+                    Address = endPoint.Address.ToString(),
+                    QueryPort = endPoint.Port,
                     GamePort = 100,
                     RoundStatus = "starting",
                     RoundStartTime = DateTime.Now,
@@ -142,7 +176,7 @@ namespace CentCom.Tests.Controllers
         }
 
         [Fact]
-        public async void PutServer_WithExisting_WillChangeItem()
+        public void PutServer_WithExisting_WillChangeItem()
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 100);
 
@@ -199,6 +233,88 @@ namespace CentCom.Tests.Controllers
 
             // Should have 200 status code, given that the item already exists.
             Assert.Equal(StatusCodes.Status404NotFound, (result as IStatusCodeActionResult).StatusCode);
+        }
+
+        [Fact]
+        public void PutServer_WithDifferentAddress_WillGiveError()
+        {
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 100);
+
+            using (var context = MockDataContext.GetContext()) {
+                context.Servers.Add(new GameServer {
+                    Name = "Server Not A",
+                    Address = endPoint.Address.ToString(),
+                    QueryPort = endPoint.Port,
+                    GamePort = 100,
+                    RoundStatus = "starting",
+                    RoundStartTime = DateTime.Now,
+                    Game = "SS3D",
+                    LastUpdate = DateTime.Now - TimeSpan.FromMinutes(2)
+                });
+                context.SaveChanges();
+            }
+
+            // Use a separate, fresh context for testing.
+            using (var context = MockDataContext.GetContext()) {
+                var controller = new ServersController(context, ConstructChallengeRespondingMock(), logger);
+                MockControllerConnection(controller, endPoint.Address);
+
+                var result = controller.PutServer(endPoint.ToString(), new GameServer {
+                    Name = "Not A",
+                    Address = "128.0.0.1",
+                    GamePort = 100,
+                    RoundStatus = "starting",
+                    RoundStartTime = DateTime.Now,
+                    Game = "SS3D"
+                });
+
+                // Should have 200 status code, given that the item already exists.
+                Assert.Equal(StatusCodes.Status400BadRequest, (result as IStatusCodeActionResult).StatusCode);
+            }
+
+            // Just double check for no updates to db
+            using (var postContext = MockDataContext.GetContext()) {
+                var onlyServer = Assert.Single(postContext.Servers);
+                Assert.Equal("Server Not A", onlyServer.Name);
+            }
+        }
+
+        [Fact]
+        public void PutServer_WithDifferentPort_WillGiveError()
+        {
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 100);
+
+            using (var context = MockDataContext.GetContext()) {
+                context.Servers.Add(new GameServer {
+                    Name = "Server Not A",
+                    Address = endPoint.Address.ToString(),
+                    QueryPort = endPoint.Port,
+                    GamePort = 100,
+                    RoundStatus = "starting",
+                    RoundStartTime = DateTime.Now,
+                    Game = "SS3D",
+                    LastUpdate = DateTime.Now - TimeSpan.FromMinutes(2)
+                });
+                context.SaveChanges();
+            }
+
+            // Use a separate, fresh context for testing.
+            using (var context = MockDataContext.GetContext()) {
+                var controller = new ServersController(context, ConstructChallengeRespondingMock(), logger);
+                MockControllerConnection(controller, endPoint.Address);
+
+                var result = controller.PutServer(endPoint.ToString(), new GameServer {
+                    Name = "Not A",
+                    QueryPort = 101,
+                    GamePort = 100,
+                    RoundStatus = "starting",
+                    RoundStartTime = DateTime.Now,
+                    Game = "SS3D"
+                });
+
+                // Should have 200 status code, given that the item already exists.
+                Assert.Equal(StatusCodes.Status400BadRequest, (result as IStatusCodeActionResult).StatusCode);
+            }
         }
 
         [Fact]

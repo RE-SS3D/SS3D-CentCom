@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using CentCom.Models;
+using Api.Models;
 
-namespace CentCom.Tests.Models
+namespace Api.Tests.Models
 {
     /**
      * <summary>
