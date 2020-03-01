@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Api", "Api\Api.csproj", "{E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Api.UnitTests", "Api.UnitTests\Api.UnitTests.csproj", "{B68F920C-80A6-41F1-B515-189FA64C21EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.FunctionalTests", "Api.FunctionalTests\Api.FunctionalTests.csproj", "{F0644E58-5862-42FF-A27F-09E2F32A4045}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Api.FunctionalTests", "Api.FunctionalTests\Api.FunctionalTests.csproj", "{F0644E58-5862-42FF-A27F-09E2F32A4045}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CB6F588-FFF5-4914-866F-B9E4EA820FE7}"
+	ProjectSection(SolutionItems) = preProject
+		README.MD = README.MD
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
