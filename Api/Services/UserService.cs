@@ -6,7 +6,7 @@ using Api.Models;
 
 namespace Api.Services
 {
-    public class UserService : IUserService
+    public class  UserService : IUserService
     {
         private DataContext _context;
         private CredentialValidationService _credentialValidationService;
@@ -17,9 +17,9 @@ namespace Api.Services
             _credentialValidationService = new CredentialValidationService();
         }
         
-        public User Authenticate(string email, string password)
+        public User Authenticate(string username, string email, string password)
         {
-            ValidateCredentials(email, password);
+            ValidateCredentials(username, email, password);
 
             var user = _context.Users.SingleOrDefault(x => x.Email == email);
 
@@ -40,11 +40,16 @@ namespace Api.Services
         
         public User Create(User user, string password)
         {
-            ValidateCredentials(user.Email, password);
+            ValidateCredentials(user.Username, user.Email, password);
 
             if (_context.Users.Any(x => x.Email == user.Email))
             {
                 throw new AppException($"The email {user.Email} is already taken.");
+            }
+            
+            if (_context.Users.Any(x => x.Username == user.Username))
+            {
+                throw new AppException($"The username {user.Username} is already taken.");
             }
 
             byte[] passwordHash;
@@ -52,6 +57,7 @@ namespace Api.Services
             HashHelper.CreatePasswordHash(password, out passwordHash, out passwordSalt);
             User newUser = new User();
             newUser.Email = user.Email;
+            newUser.Username = user.Username;
             newUser.PasswordHash = passwordHash;
             newUser.PasswordSalt = passwordSalt;
 
@@ -66,11 +72,11 @@ namespace Api.Services
             return _context.Users.Find(id);
         }
 
-        private void ValidateCredentials(string email, string password)
+        private void ValidateCredentials(string username, string email, string password)
         {
             try
             {
-                _credentialValidationService.Validate(email, password);
+                _credentialValidationService.Validate(username, email, password);
             }
             catch (ValidationException e)
             {

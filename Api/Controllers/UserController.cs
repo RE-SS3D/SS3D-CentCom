@@ -36,7 +36,7 @@ namespace Api.Controllers
             User user;
             try 
             {
-                user = _userService.Authenticate(request.Email, request.Password);
+                user = _userService.Authenticate(request.Username, request.Email, request.Password);
             } 
             catch(AppException ex)
             {
