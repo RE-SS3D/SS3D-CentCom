@@ -36,7 +36,7 @@ namespace Api.Controllers
             User user;
             try 
             {
-                user = _userService.Authenticate(request.Username, request.Email, request.Password);
+                user = _userService.Authenticate(request.Username, request.Password);
             } 
             catch(AppException ex)
             {
@@ -50,7 +50,7 @@ namespace Api.Controllers
                 Subject = new ClaimsIdentity(new Claim[] 
                 {
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email)
+                    new Claim(ClaimTypes.Name, user.Username)
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -60,7 +60,7 @@ namespace Api.Controllers
 
             return Ok(new {
                 Id = user.Id,
-                Email = user.Email,
+                Username = user.Username,
                 Token = tokenString
             });
         }

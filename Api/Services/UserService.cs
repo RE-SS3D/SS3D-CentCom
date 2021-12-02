@@ -17,22 +17,22 @@ namespace Api.Services
             _credentialValidationService = new CredentialValidationService();
         }
         
-        public User Authenticate(string username, string email, string password)
+        public User Authenticate(string username, string password)
         {
-            ValidateCredentials(username, email, password);
+            ValidateCredentials(username, password);
 
-            var user = _context.Users.SingleOrDefault(x => x.Email == email);
+            var user = _context.Users.SingleOrDefault(x => x.Username == username);
 
             //User does not exist
             if (user == null)
             {
-                throw new AppException("Incorrect Email or Password.");
+                throw new AppException("Incorrect Username or Password.");
             }
 
             //Incorrect password
             if (!HashHelper.VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
             {
-                throw new AppException("Incorrect Email or Password.");
+                throw new AppException("Incorrect Username or Password.");
             }
                 
             return user;
@@ -40,7 +40,7 @@ namespace Api.Services
         
         public User Create(User user, string password)
         {
-            ValidateCredentials(user.Username, user.Email, password);
+            ValidateCredentials(user.Username, password);
 
             if (_context.Users.Any(x => x.Email == user.Email))
             {
@@ -72,11 +72,11 @@ namespace Api.Services
             return _context.Users.Find(id);
         }
 
-        private void ValidateCredentials(string username, string email, string password)
+        private void ValidateCredentials(string username, string password)
         {
             try
             {
-                _credentialValidationService.Validate(username, email, password);
+                _credentialValidationService.Validate(username, password);
             }
             catch (ValidationException e)
             {
