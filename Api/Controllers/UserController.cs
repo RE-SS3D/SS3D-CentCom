@@ -58,10 +58,26 @@ namespace Api.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
+            var userIdentityTokenHandler = new JwtSecurityTokenHandler();
+            var userIdentityKey = Encoding.ASCII.GetBytes(_appSettings.PublicKey);
+            var userIdentityTokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[] 
+                {
+                    new Claim(ClaimTypes.Name, user.Id.ToString()),
+                    new Claim(ClaimTypes.Name, user.Username)
+                }),
+                Expires = DateTime.UtcNow.AddDays(30),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(userIdentityKey), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var userIdentityToken = userIdentityTokenHandler.CreateToken(userIdentityTokenDescriptor);
+            var userIdentityTokenString = tokenHandler.WriteToken(userIdentityToken);
+
             return Ok(new {
                 Id = user.Id,
                 Username = user.Username,
-                Token = tokenString
+                Token = tokenString,
+                UserIdentityToken = userIdentityTokenString
             });
         }
         
