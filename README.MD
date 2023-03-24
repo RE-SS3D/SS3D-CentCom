@@ -1,5 +1,6 @@
-# CentCom
-RESTful API for managing user registration, authentication and character storage for RE:SS3D
+<h3 align="center"><img src="assets/img/SS3DBanner4.png" alt="SS3D_Banner">RESTful API for managing user registration, authentication, and character storage for<a href="https://ss3d.space/">Space Station 3D</a>!</h3>
+
+<br>
 
 ## Development Setup
 
