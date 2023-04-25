@@ -2,7 +2,7 @@
 
 <br>
 
-## Development Setup [<img src="https://img.shields.io/github/repo-size/RE-SS3D/SS3D-CentCom?color=yellow&style=plastic" alt="Repo Size" align="right">](https://github.com/RE-SS3D/SS3D-CentCom)
+## Development Setup [<img src="https://img.shields.io/github/repo-size/RE-SS3D/SS3D-CentCom?color=gold&style=plastic" alt="Repo Size" align="right">](https://github.com/RE-SS3D/SS3D-CentCom)
 
 Developing on windows should "just work" (tm) with Visual Studio.
 For other platforms - the functional tests use a LocalDB that gets created and destroyed before and after use.
