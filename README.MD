@@ -29,8 +29,8 @@ See the [ms docs](https://docs.microsoft.com/en-us/ef/core/managing-schemas/migr
 
 ## API SPEC
 
-A swagger specification for the API can be found in the [Docs folder](Docs/swagger.yaml).
+A swagger specification for the API can be found in [Docs/swagger.yaml](Docs/swagger.yaml).
 
 ## Docs
 
-More in-depth documentation for the game-server list can be found in the [Docs folder](Docs/server-list.md)
+More in-depth documentation for the game-server list can be found in [Docs/server-list.md](Docs/server-list.md)
