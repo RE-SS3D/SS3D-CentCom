@@ -2,7 +2,7 @@
 
 <br>
 
-## Development Setup
+## Development Setup [<img src="https://img.shields.io/github/repo-size/RE-SS3D/CentCom?color=yellow&style=plastic" alt="Repo Size" align="right">](https://github.com/RE-SS3D/SS3D-CentCom)
 
 Developing on windows should "just work" (tm) with Visual Studio.
 For other platforms - the functional tests use a LocalDB that gets created and destroyed before and after use.
@@ -14,7 +14,7 @@ just try to use an in-memory database.
 Whenever the database context is update in asp.net, a new migration has to be made so that the update
 can be applied to existing servers.
 
-See [the ms docs for more](https://docs.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli#create-a-migration)
+See the [ms docs](https://docs.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli#create-a-migration) for more info.
 
 ## Installation - Production Server
 
@@ -28,8 +28,9 @@ See [the ms docs for more](https://docs.microsoft.com/en-us/ef/core/managing-sch
 - The API listens on port 5001 for HTTPS and 5000 for HTTP
 
 ## API SPEC
-A swagger specification for the API can be found in the [docs folder]((docs/swagger.yaml)).
+
+A swagger specification for the API can be found in the [Docs folder](Docs/swagger.yaml).
 
 ## Docs
 
-More in-depth documentation for the game-server list can be found in the [docs folder]((docs/server-list.md))
+More in-depth documentation for the game-server list can be found in the [Docs folder](Docs/server-list.md)
