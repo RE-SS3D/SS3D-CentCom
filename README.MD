@@ -34,3 +34,9 @@ A swagger specification for the API can be found in [Docs/swagger.yaml](Docs/swa
 ## Docs
 
 More in-depth documentation for the game-server list can be found in [Docs/server-list.md](Docs/server-list.md)
+
+## LICENSE
+
+All **CODE** falls under the **[MIT](https://github.com/RE-SS3D/.github/blob/main/LICENSE-CODE.md)** license.
+
+All **ASSETS** fall under the **[CC BY-NC-SA 4.0](https://github.com/RE-SS3D/.github/blob/main/LICENSE-ASSETS.md)** license.
