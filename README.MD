@@ -1,4 +1,4 @@
-<h3 align="center"><img src="Docs/Images/SS3DBanner4.png" alt="SS3D_Banner">RESTful API for managing user registration, authentication, and character storage for<a href="https://ss3d.space/"> Space Station 3D</a>!</h3>
+<h3 align="center"><img src="https://raw.githubusercontent.com/RE-SS3D/SS3D-Art/main/Artwork/Banners/BorderedBanners/SS3DBanner4.png" alt="SS3D_Banner">RESTful API for managing user registration, authentication, and character storage for<a href="https://ss3d.space/"> Space Station 3D</a>!</h3>
 
 <br>
 
