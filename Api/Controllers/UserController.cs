@@ -36,7 +36,7 @@ namespace Api.Controllers
             User user;
             try 
             {
-                user = _userService.Authenticate(request.Email, request.Password);
+                user = _userService.Authenticate(request.Username, request.Password);
             } 
             catch(AppException ex)
             {
@@ -50,7 +50,7 @@ namespace Api.Controllers
                 Subject = new ClaimsIdentity(new Claim[] 
                 {
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email)
+                    new Claim(ClaimTypes.Name, user.Username)
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -58,10 +58,26 @@ namespace Api.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
+            var userIdentityTokenHandler = new JwtSecurityTokenHandler();
+            var userIdentityKey = Encoding.ASCII.GetBytes(_appSettings.PublicKey);
+            var userIdentityTokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[] 
+                {
+                    new Claim(ClaimTypes.Name, user.Id.ToString()),
+                    new Claim(ClaimTypes.Name, user.Username)
+                }),
+                Expires = DateTime.UtcNow.AddDays(30),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(userIdentityKey), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var userIdentityToken = userIdentityTokenHandler.CreateToken(userIdentityTokenDescriptor);
+            var userIdentityTokenString = tokenHandler.WriteToken(userIdentityToken);
+
             return Ok(new {
                 Id = user.Id,
-                Email = user.Email,
-                Token = tokenString
+                Username = user.Username,
+                Token = tokenString,
+                UserIdentityToken = userIdentityTokenString
             });
         }
         

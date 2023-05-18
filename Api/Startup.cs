@@ -78,6 +78,7 @@ namespace Api
                     };
                 });
 
+            services.AddControllers().AddNewtonsoftJson();
             // configure DI for application services
             services.AddHttpContextAccessor();
             services.AddScoped<IUserService, UserService>();
@@ -92,13 +93,14 @@ namespace Api
             if (app is null)
                 throw new ArgumentNullException(nameof(app));
 
+            app.UseAuthentication();
             app.UseRouting();
+            app.UseAuthorization();
 
             app.UseCors(x => x
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
-            app.UseAuthentication();
             app.UseForwardedHeaders(new ForwardedHeadersOptions {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
